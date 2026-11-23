@@ -20,8 +20,20 @@ if not exist ".gitignore" (
   echo .trash/>> .gitignore
 )
 
+rem Guard: the pre-commit hook in .githooks blocks scenario files (they must stay out of the public repo).
+git config core.hooksPath .githooks
+
 git add -A
 git commit -m "wiki update %date% %time%"
+if errorlevel 1 (
+  git diff --cached --quiet
+  if errorlevel 1 (
+    echo.
+    echo COMMIT BLOCKED. Read the message above. NOTHING was uploaded to GitHub.
+    pause
+    exit /b 1
+  )
+)
 
 git push -u origin main
 if errorlevel 1 (

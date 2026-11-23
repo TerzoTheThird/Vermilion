@@ -1,0 +1,13 @@
+#!/bin/sh
+# Vermilion: חוסם העלאה של תרחישים של קודקוד לריפו הציבורי.
+# תרחיש מכיל את התשובות ואת זהות הקרב. המקום שלו בריפו של קודקוד (תיקיית תרחישים).
+blocked=$(git -c core.quotepath=off diff --cached --name-only --diff-filter=ACMR | grep 'תרחיש')
+if [ -n "$blocked" ]; then
+  echo "" >&2
+  echo "BLOCKED: scenario files must not go to the public wiki repo:" >&2
+  echo "$blocked" >&2
+  echo "Move them to the KodKod repo (folder: tarhishim). Nothing was committed." >&2
+  echo "" >&2
+  exit 1
+fi
+exit 0
