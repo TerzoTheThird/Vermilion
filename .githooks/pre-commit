@@ -1,11 +1,36 @@
 #!/bin/sh
 # Vermilion: חוסם העלאה של תרחישים של קודקוד לריפו הציבורי.
 # תרחיש מכיל את התשובות ואת זהות הקרב. המקום שלו בריפו של קודקוד (תיקיית תרחישים).
-blocked=$(git -c core.quotepath=off diff --cached --name-only --diff-filter=ACMR | grep 'תרחיש')
+#
+# נחסם רק:
+#   1. קובץ בתוך תיקייה שנקראת בדיוק "תרחישים" (בכל עומק).
+#   2. קובץ markdown שנראה כמו תרחיש: בראש הקובץ (frontmatter) יש גם seat: וגם callsigns:
+# המילה "תרחיש" בתוך טקסט, או בשם של קובץ רגיל, לא חוסמת.
+blocked=""
+NL='
+'
+files=$(git -c core.quotepath=off diff --cached --name-only --diff-filter=ACMR)
+OLDIFS=$IFS; IFS=$NL
+for f in $files; do
+  case "/$f" in
+    */תרחישים/*) blocked="$blocked$f$NL"; continue ;;
+  esac
+  case "$f" in
+    *.md)
+      head=$(git show ":$f" 2>/dev/null | head -n 40 | tr -d '\r')
+      if printf '%s\n' "$head" | head -n 1 | grep -q '^---$' \
+         && printf '%s\n' "$head" | grep -q '^seat:' \
+         && printf '%s\n' "$head" | grep -q '^callsigns:'; then
+        blocked="$blocked$f$NL"
+      fi ;;
+  esac
+done
+IFS=$OLDIFS
+
 if [ -n "$blocked" ]; then
   echo "" >&2
-  echo "BLOCKED: scenario files must not go to the public wiki repo:" >&2
-  echo "$blocked" >&2
+  echo "BLOCKED: KodKod scenario files must not go to the public wiki repo:" >&2
+  printf '%s' "$blocked" >&2
   echo "Move them to the KodKod repo (folder: tarhishim). Nothing was committed." >&2
   echo "" >&2
   exit 1
